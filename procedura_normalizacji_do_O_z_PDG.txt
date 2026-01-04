@@ -32,6 +32,73 @@ t: 172.57 GeV
 W: 80.369 GeV 
 Z: 91.188 GeV 
 Użyj tych wartości (w GeV dla spójności – przelicz MeV na GeV dzieląc przez 1000).
+Poprawna procedura tworzenia danych wejściowych (bez oszukiwania)
+1. Pobieranie z PDG Tylko masy (centralne wartości z najwyższą precyzją dostępną w PDF PDG 2024).
+m_e = 0.51099895000 MeV 
+m_μ = 105.6583755 MeV 
+m_τ = 1776.93 MeV 
+m_u = 2.16 MeV (MS scheme) 
+m_d = 4.70 MeV 
+m_s = 93.5 MeV 
+m_c = 1273 MeV 
+m_b = 4183 MeV 
+m_t = 172570 MeV 
+m_W = 80369 MeV 
+m_Z = 91188 MeV 
+m_H = 125200 MeV 
+2. Skalowanie m_norm = m / m_t (m_t = 172570 MeV jako ref scale SM) → zakres 0–1 (shader-like). 
+3. Parametry modelu
+ε = 1e-50 (regulator stabilności, z abstraktu) 
+β = 1 - ε 
+real = sqrt(1 - β²) = sqrt(2ε - ε²) ≈ sqrt(2 × 10^{-50}) 
+Im1 = β 
+Im2 = 1 (c=1 banalne) 
+Im3 = anomalia g-2 (jeśli jest w PDG, inaczej 0) 
+Im4–Im7 = m_norm odpowiednich smaków (dla kompozytów – średnie lub rozłożone) 
+Dodatkowe małe Im: + ε × k (k=1,2,3… dla nie-zerowości, deterministycznie) 
+4. Normalizacja vec = [real, β, 1, g-2, m_norm1, m_norm2, m_norm3, m_norm4, ε×1, ε×2, ε×3, ε×4, ε×5, ε×6, ε×7, ε×8] norm = mpmath.sqrt(sum(x**2 for x in vec)) normalized = [x / norm for x in vec] (dps=200) 
+Przykłady z pełnym rygorem (dps=200, bez zaokrąglenia)
+Elektron (lepton, stabilny, g-2 = 0.00115965218062)
+Python:
+comp = [
+    mpmath.sqrt(mpmath.mpf('2e-50') - mpmath.mpf('1e-100')),  # real ≈ sqrt(2ε)
+    mpmath.mpf('1') - mpmath.mpf('1e-50'),                     # β
+    mpmath.mpf('1'),                                            # c=1
+    mpmath.mpf('0.00115965218062'),                             # g-2
+    mpmath.mpf('0'),                                            # brak kolorów
+    mpmath.mpf('0'),
+    mpmath.mpf('0'),
+    mpmath.mpf('0'),
+    mpmath.mpf('1e-50'), mpmath.mpf('2e-50'), mpmath.mpf('3e-50'),  # ε-fluktuacje
+    mpmath.mpf('4e-50'), mpmath.mpf('5e-50'), mpmath.mpf('6e-50'),
+    mpmath.mpf('7e-50'), mpmath.mpf('8e-50')
+]
+Proton (uud, kompozyt, masa PDG 938.272 MeV)
+real ≈ sqrt(2ε) 
+β ≈ 1 - ε 
+Im1–Im3 → jak elektron (ładunek +1 → Im2=1) 
+Im4–Im6 → m_norm_u + m_norm_u + m_norm_d / 3 (średnia) 
+Im7 → ε-fluktuacja 
+Im8–Im15 → ε × k (k=1..8)
+# potem normalizacja
+python:
+m_t = mpmath.mpf('172570')
+m_u = mpmath.mpf('2.16')
+m_d = mpmath.mpf('4.70')
+m_avg = (m_u + m_u + m_d) / 3 / m_t
+
+comp = [
+    mpmath.sqrt(mpmath.mpf('2e-50') - mpmath.mpf('1e-100')),
+    mpmath.mpf('1') - mpmath.mpf('1e-50'),
+    mpmath.mpf('1'),  # ładunek +1
+    mpmath.mpf('0'),  # brak anomalii w PDG
+    m_avg, m_avg, m_avg, mpmath.mpf('1e-50'),
+    mpmath.mpf('1e-50'), mpmath.mpf('2e-50'), mpmath.mpf('3e-50'),
+    mpmath.mpf('4e-50'), mpmath.mpf('5e-50'), mpmath.mpf('6e-50'),
+    mpmath.mpf('7e-50'), mpmath.mpf('8e-50')
+]
+To jest prawidłowe podejście – bez zaokrągleń, bez ignorowania małych Im, pełna precyzja.
+
 Krok 2: Gdzie wstawiamy dane do oktoniona
 Oktonion to wektor 8D: [e0 (real), e1 (Im1), e2 (Im2), e3 (Im3), e4 (Im4), e5 (Im5), e6 (Im6), e7 (Im7)].
 e0 (real): Wstaw 0 (model zakłada massless-like base lub emergent m_eff = sin(φ) po twist; real=0 dla czystych pól). 
