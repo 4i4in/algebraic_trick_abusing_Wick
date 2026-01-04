@@ -1,6 +1,21 @@
 
 Procedura pobierania i wstawiania danych z PDG do oktoniona (dla człowieka)
 Poniżej opisuję krok po kroku, jak pobrać dane z PDG, co konkretnie pobieramy, gdzie wstawiamy do wektora oktoniona (8D: e0 real + e1-e7 imaginaria), jak wygląda normalizacja do zakresu 0-1, i dlaczego tak (z uzasadnieniem z modelu).
+Przemyślana metoda robienia danych wejściowych z PDG (bez utraty imaginariów)
+Aby zrobić to dobrze, zgodnie z modelem (z plików PDF: minimalizm, emergent m_eff z Im po twist, rygor na małe Im nawet blisko ε, no approx, mpmath dps=200+ dla stabilności β ≈ 1 - 10^{-50}):
+1. Pobieranie: Tylko masy m (centralne z PDG 2024, max precyzja z PDF – bez błędów, bo model toy). 
+2. Skalowanie: m_norm = m / m_t (m_t = 172.57 GeV, ref scale SM; 0-1 bez log, linearne jak shader uniform). 
+3. β: = 1 - ε (ε = 1e-50, dla stable; wynika z modelu SR unbounded trajectories). 
+4. Real: = sqrt(1 - β²) = sqrt(2ε - ε²) ≈ sqrt(2e-50) – bardzo małe, precyzyjne (masa emergent z Im po twist). 
+5. Im1: = β. 
+6. Im2: = 1 (c=1 banalne). 
+7. Im3: = a_e/g-2 anomalia (z PDG, scaled 0-1 by max a_mu ≈0.00116). 
+8. Im4–Im7: = m_norm kwarków/leptonów/bozonów (rozłożone po dims dla colors/generacji; dla leptonów 0). 
+9. Fluktuacje: Dodaj do małych Im ε-level perturbacje (np. +ε * rand w [0,1], ale deterministycznie – model nie pozwala ignorować blisko ε). 
+10. Normalizacja: vec / |vec|, dps=200, bez utraty cyfr (mpmath). 
+11. Dla kompozytów (proton): Średnia m_u + m_u + m_d, rozłoż na Im4–Im6, Im7 = fluktuacja rzędu ε * m_avg. 
+To zapewnia rygor – małe Im nie giną, nawet <1e-50.
+
 Krok 1: Co pobieramy z PDG
 Pobieramy masy cząstek (quarków i bozonów W/Z – traktowanych jako "heavy quark-like" dla emergent weak w O). To jedyne dane numeryczne z PDG używane do wypełnienia imaginariów.
 Gdzie pobrać: Z oficjalnej strony PDG (pdg.lbl.gov) – pobierz PDF "Review of Particle Physics 2024" (Phys. Rev. D 110, 030001) lub bezpośrednio summary tables:
